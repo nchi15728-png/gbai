@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ảnh riêng tư</title>
+  <title>Ảnh Riêng Tư</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -32,6 +32,7 @@
       gap: 12px;
     }
 
+    /* ĐÃ SỬA LỖI CLASS TẠI ĐÂY */
     .logo-box {
       width: 40px;
       height: 40px;
@@ -42,6 +43,13 @@
       justify-content: center;
       font-size: 1.2rem;
       box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      overflow: hidden;
+    }
+
+    .logo-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .title-box h1 {
@@ -131,7 +139,7 @@
     .lightbox.active { display: flex; }
     .lightbox img {
       max-width: 100%;
-      max-height: 75vh;
+      max-height: 70vh;
       object-fit: contain;
       border-radius: 8px;
     }
@@ -151,6 +159,20 @@
       color: #e2e8f0;
       text-align: center;
     }
+
+    /* Nút copy link xem ảnh */
+    .share-btn {
+      margin-top: 12px;
+      background-color: #334155;
+      color: #f8fafc;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .share-btn:hover { background-color: #475569; }
   </style>
 </head>
 <body>
@@ -158,10 +180,13 @@
   <!-- HEADER: LOGO + TÊN GÓC TRÊN BÊN TRÁI -->
   <header>
     <div class="brand-container">
-      <div class="ảnh/HVTykhBbsAAyJZC.jpg">🖼️</div>
+      <!-- ĐÃ SỬA: Hiển thị hình ảnh logo góc trái -->
+      <div class="logo-box">
+        <img src="ảnh/HVTykhBbsAAyJZC.jpg" alt="Logo" onerror="this.outerHTML='🖼️';">
+      </div>
       <div class="title-box">
         <h1>ảnh riêng tư</h1>
-        <p>2 ảnh</p>
+        <p id="total-count">2 ảnh</p>
       </div>
     </div>
 
@@ -182,38 +207,32 @@
     <button class="lightbox-close" id="close-btn">&times;</button>
     <img id="lightbox-img" src="" alt="">
     <div id="lightbox-title" class="lightbox-title"></div>
+    <button class="share-btn" id="share-btn">🔗 Sao chép link ảnh này</button>
   </div>
 
   <script>
-    // ✏️ SỐ LƯỢNG ẢNH HIỂN THỊ TRÊN TRANG
-    const TOTAL_IMAGES = 2;
-
-    // ✏️ DANH SÁCH ẢNH MẪU (Thay link ảnh hoặc tên tùy ý)
+    // ✏️ DANH SÁCH ẢNH CỦA BẠN (Thêm/bớt ảnh trực tiếp tại đây)
     const baseImages = [
-      { url: "ảnh/images 1.jpg", title: "12:56" },
-      { url: "ảnh/images 2.jpg", title: "12:57" },
+      { id: 1, url: "ảnh/images 1.jpg", title: "12:56" },
+      { id: 2, url: "ảnh/images 2.jpg", title: "12:57" }
     ];
 
-    // Tự động tạo danh sách ảnh theo số lượng mong muốn
-    const imagesList = [];
-    for (let i = 0; i < TOTAL_IMAGES; i++) {
-      const template = baseImages[i % baseImages.length];
-      imagesList.push({
-        url: `${template.url}?auto=format&fit=crop&w=800&q=80`,
-        title: `${template.title} #${i + 1}`
-      });
-    }
+    // Tự động cập nhật số lượng ảnh hiển thị ở Header
+    document.getElementById('total-count').textContent = `${baseImages.length} ảnh`;
 
-    // Render ra giao diện
+    // Render danh sách ảnh
     const galleryEl = document.getElementById('gallery');
-    imagesList.forEach((item) => {
+    baseImages.forEach((item) => {
       const card = document.createElement('div');
       card.className = 'card';
       card.innerHTML = `
         <img src="${item.url}" alt="${item.title}" loading="lazy">
         <div class="card-title">${item.title}</div>
       `;
-      card.addEventListener('click', () => openLightbox(item.url, item.title));
+      card.addEventListener('click', () => {
+        window.location.hash = `anh-${item.id}`;
+        openLightbox(item);
+      });
       galleryEl.appendChild(card);
     });
 
@@ -221,20 +240,38 @@
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
     const lightboxTitle = document.getElementById('lightbox-title');
+    const shareBtn = document.getElementById('share-btn');
 
-    function openLightbox(url, title) {
-      lightboxImg.src = url;
-      lightboxTitle.textContent = title;
+    function openLightbox(item) {
+      lightboxImg.src = item.url;
+      lightboxTitle.textContent = item.title;
       lightbox.classList.add('active');
     }
 
-    document.getElementById('close-btn').addEventListener('click', () => {
+    function closeLightbox() {
       lightbox.classList.remove('active');
+      history.pushState("", document.title, window.location.pathname + window.location.search);
+    }
+
+    document.getElementById('close-btn').addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) closeLightbox();
     });
 
-    lightbox.addEventListener('click', (e) => {
-      if (e.target === lightbox) {
-        lightbox.classList.remove('active');
+    // Tính năng chép link nhanh khi đẩy lên GitHub Pages
+    shareBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(window.location.href);
+      shareBtn.textContent = "✅ Đã chép link!";
+      setTimeout(() => { shareBtn.textContent = "🔗 Sao chép link ảnh này"; }, 2000);
+    });
+
+    // Tự mở ảnh nếu người khác bấm vào link chia sẻ (ví dụ: #anh-1)
+    window.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#anh-')) {
+        const id = parseInt(hash.replace('#anh-', ''));
+        const found = baseImages.find(img => img.id === id);
+        if (found) openLightbox(found);
       }
     });
   </script>
